@@ -18,6 +18,10 @@ void keyCallback(GLFWwindow * window, int key,
 
 Engine::Engine()
 {
+	// Instantiate Background
+	GameObject* background = new GameObject(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1), "textures/background.jpg", 1, GameObject::ColliderType::none);
+	objects.push_back(background);
+
 	// Instantiate Player ship
 	GameObject* ship = new GameObject(vec3(0, -0.5f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/ship.png", 1, GameObject::ColliderType::sphere);
 	objects.push_back(ship);
@@ -27,8 +31,10 @@ Engine::Engine()
 	// Instantiate enemies
 	GameObject* enemy1 = new GameObject(vec3(0.3f, 0.2f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere);
 	objects.push_back(enemy1);
+	enemies.push_back(enemy1);
 	GameObject* enemy2 = new GameObject(vec3(-0.3f, 0.2f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere);
 	objects.push_back(enemy2);
+	enemies.push_back(enemy2);
 }
 
 Engine::~Engine()
@@ -64,6 +70,9 @@ bool Engine::init()
 	// Enable Alpha
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Create Camera
+	mainCamera = new Camera();
 
 	return true;
 }
@@ -150,29 +159,7 @@ bool Engine::gameLoop()
 	// Load Textures
 	for (int i = 0; i < objects.size(); i++)
 	{
-		char* texFileOne = (*objects[i]).texture;
-		FIBITMAP* imageOne = FreeImage_Load(FreeImage_GetFileType(texFileOne, 0), texFileOne);
-
-		if (imageOne == nullptr) // load failed
-		{
-			std::cout << "Failed to load texture one." << std::endl;
-			glfwTerminate();
-			return false;
-		}
-
-		FIBITMAP* image32BitOne = FreeImage_ConvertTo32Bits(imageOne);
-		FreeImage_Unload(imageOne);
-
-		glGenTextures(1, &(*objects[i]).glTex);
-		glBindTexture(GL_TEXTURE_2D, (*objects[i]).glTex);
-		glTexImage2D(GL_TEXTURE_2D, 0,
-			GL_SRGB_ALPHA, FreeImage_GetWidth(image32BitOne), FreeImage_GetHeight(image32BitOne), 0, GL_BGRA,
-			GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(image32BitOne));
-		glTexParameteri(GL_TEXTURE_2D,
-			GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-		FreeImage_Unload(image32BitOne);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		loadTexture((*objects[i]).texture, &(*objects[i]).glTex);
 	}
 
 	currTime = glfwGetTime();
@@ -192,26 +179,73 @@ bool Engine::gameLoop()
 		// Movement
 		if (keyIsDown[GLFW_KEY_A])
 		{
-			(*player).rigidBody.force += glm::vec3(-0.02, 0, 0);
+			(*player).rigidBody.force += glm::vec3(-0.01, 0, 0);
 		}
 		if (keyIsDown[GLFW_KEY_D])
 		{
-			(*player).rigidBody.force += glm::vec3(0.02, 0, 0);
+			(*player).rigidBody.force += glm::vec3(0.01, 0, 0);
 		}
+		if (keyIsDown[GLFW_KEY_SPACE] && currTime - lastBullet > bulletInterval)
+		{
+			lastBullet = currTime;
+			GameObject* bullet = new GameObject((*player).transform.location, vec3(0, 0, 0), vec3(0.1f, 0.1f, 0.1f), "textures/bullet.png", 1, GameObject::ColliderType::sphere);
+			(*bullet).rigidBody.velocity.y = 1;
+			loadTexture((*bullet).texture, &(*bullet).glTex);
+			objects.push_back(bullet);
+			bullets.push_back(bullet);
+		}
+		// Move camera with arrows
+		vec3 camVel;
+		glm::mat3 R = (glm::mat3)glm::yawPitchRoll(mainCamera->transform.rotation.y, mainCamera->transform.rotation.x, mainCamera->transform.rotation.z);
+		if (keyIsDown[GLFW_KEY_LEFT])
+		{
+			camVel += R * vec3(-1, 0, 0);
+		}
+		if (keyIsDown[GLFW_KEY_RIGHT])
+		{
+			camVel += R * vec3(1, 0, 0);
+		}
+		if (keyIsDown[GLFW_KEY_UP])
+		{
+			camVel += R * vec3(0, 0, -1);
+		}
+		if (keyIsDown[GLFW_KEY_DOWN])
+		{
+			camVel += R * vec3(0, 0, 1);
+		}
+		float speed = 1.f;
+		if (camVel != vec3())
+		{
+			camVel = glm::normalize(camVel) * speed;
+		}
+		mainCamera->rigidBody.velocity = camVel;
 
 		for (int i = 0; i < objects.size(); i++)
 		{
 			glBindTexture(GL_TEXTURE_2D, (*objects[i]).glTex);
 			// Calculate changes in force and velocity
-			(*objects[i]).rigidBody.velocity += ((*objects[i]).rigidBody.force / (*objects[i]).rigidBody.mass);
-			(*objects[i]).transform.location += (*objects[i]).rigidBody.velocity * (float)deltaTime;
-			(*objects[i]).rigidBody.force = glm::vec3(0, 0, 0);
+			(*objects[i]).updateRigidBody(deltaTime);
 
-			(*objects[i]).transform.objWorldTransform = glm::translate((*objects[i]).transform.location) * glm::yawPitchRoll((*objects[i]).transform.rotation.x, (*objects[i]).transform.rotation.y, (*objects[i]).transform.rotation.z) * glm::scale((*objects[i]).transform.size);
 			glBindVertexArray(vertArr);
 			glUniformMatrix4fv(2, 1, GL_FALSE, &(*objects[i]).transform.objWorldTransform[0][0]);
-			glDrawArrays(GL_TRIANGLES, 0, vertCount);
+			if ((*objects[i]).visible)
+			{
+				glDrawArrays(GL_TRIANGLES, 0, vertCount);
+			}
 		}
+
+		for (int i = 0; i < bullets.size(); i++)
+		{
+			for (int j = 0; j < enemies.size(); j++)
+			{
+				if ((*bullets[i]).collidesWith(enemies[j]))
+				{
+					(*bullets[i]).visible = false;
+				}
+			}
+		}
+
+		mainCamera->updateMatrix(deltaTime, GLFWwindowPtr);
 
 		glBindVertexArray(0);
 
@@ -243,4 +277,33 @@ bool Engine::useShaders()
 	}
 
 	return false;
+}
+
+bool Engine::loadTexture(char * texture, GLuint* glTex)
+{
+	char* texFileOne = texture;
+	FIBITMAP* imageOne = FreeImage_Load(FreeImage_GetFileType(texFileOne, 0), texFileOne);
+
+	if (imageOne == nullptr) // load failed
+	{
+		std::cout << "Failed to load texture one." << std::endl;
+		glfwTerminate();
+		return false;
+	}
+
+	FIBITMAP* image32BitOne = FreeImage_ConvertTo32Bits(imageOne);
+	FreeImage_Unload(imageOne);
+
+	glGenTextures(1, glTex);
+	glBindTexture(GL_TEXTURE_2D, *glTex);
+	glTexImage2D(GL_TEXTURE_2D, 0,
+		GL_SRGB_ALPHA, FreeImage_GetWidth(image32BitOne), FreeImage_GetHeight(image32BitOne), 0, GL_BGRA,
+		GL_UNSIGNED_BYTE, (void*)FreeImage_GetBits(image32BitOne));
+	glTexParameteri(GL_TEXTURE_2D,
+		GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	FreeImage_Unload(image32BitOne);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return true;
 }

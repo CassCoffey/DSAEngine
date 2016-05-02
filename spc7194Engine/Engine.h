@@ -1,6 +1,7 @@
 #pragma once
 #include "ShaderManager.h"
 #include "GameObject.h"
+#include "Camera.h"
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -9,7 +10,6 @@
 #include <string.h>
 #include <vector>
 #include <map>
-#include <glm/gtx/transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
 using glm::vec3;
@@ -24,16 +24,22 @@ public:
 	bool bufferModel();
 	bool gameLoop();
 	bool useShaders();
+	bool loadTexture(char* texture, GLuint* glTex);
 
 private:
+	Camera* mainCamera;
 	GLFWwindow* GLFWwindowPtr;
 	GLuint vertArr;
 	unsigned int vertCount;
 	ShaderManager shaderManager;
 	std::vector<GameObject*> objects;
+	std::vector<GameObject*> bullets;
+	std::vector<GameObject*> enemies;
 	GameObject* player;
 	double currTime;
 	double prevTime;
-	double deltaTime;
+	double deltaTime;		
+	double lastBullet = 0;
+	const double bulletInterval = 0.3;
 };
 

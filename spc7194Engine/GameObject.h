@@ -1,8 +1,13 @@
 #pragma once
-#include <glm/glm.hpp>
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
-#include <cmath>
+#include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
+#include <FreeImage.h>
+#include <string.h>
+#include <vector>
+#include <map>
+#include <glm/gtx/euler_angles.hpp>
 
 using glm::vec3;
 using glm::vec2;
@@ -40,6 +45,7 @@ public:
 	~GameObject();
 	GameObject(vec3 location, vec3 rotation, vec3 size, char* iTexture, float mass, ColliderType iCollider);
 
+	void updateRigidBody(float deltaTime);
 	bool collidesWith(const GameObject* other);
 
 	Transform transform;
@@ -47,5 +53,6 @@ public:
 	GLuint glTex;
 	RigidBody rigidBody;
 	ColliderType collider;
+	bool visible;
 };
 
