@@ -20,7 +20,7 @@ Camera::~Camera()
 void Camera::updateMatrix(float deltaTime, GLFWwindow* GLFWwindowPtr)
 {
 	// Debug fps controls. Disabled by default.
-	if (false)
+	if (true)
 	{
 		// turn with mouse
 		float sens = .005;

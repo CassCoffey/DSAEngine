@@ -9,6 +9,11 @@
 #include <vector>
 #include <map>
 #include <glm/gtx/euler_angles.hpp>
+#include <string>
+#include <fstream>
+#include <streambuf>
+#include <sstream>
+#include <iostream>
 
 struct Vertex
 {
@@ -34,5 +39,9 @@ public:
 private:
 	GLuint vertArr;
 	unsigned int vertCount;
+	std::vector<vec3> locs;
+	std::vector<vec2> uvs;
+	std::vector<vec3> normals;
+	std::vector<VertexInd> vertInds;
 };
 

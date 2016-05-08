@@ -79,7 +79,7 @@ bool Engine::init()
 
 bool Engine::bufferModels()
 {
-	return model.buffer();
+	return model.buffer("models/sphere.obj");
 }
 
 bool Engine::gameLoop()
