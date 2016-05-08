@@ -156,12 +156,14 @@
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="GameObject.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Model.cpp" />
     <ClCompile Include="ShaderManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Model.h" />
     <ClInclude Include="ShaderManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -12,12 +12,6 @@
 using glm::vec3;
 using glm::vec2;
 
-struct Vertex
-{
-	vec3 loc;
-	vec2 uv;
-};
-
 struct Transform
 {
 	vec3 location, rotation, size;

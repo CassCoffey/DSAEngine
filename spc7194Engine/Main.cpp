@@ -9,7 +9,7 @@ int main()
 		return -1;
 	}
 
-	if (!myEngine.bufferModel())
+	if (!myEngine.bufferModels())
 	{
 		return -1;
 	}

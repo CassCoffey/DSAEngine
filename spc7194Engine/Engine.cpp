@@ -77,77 +77,9 @@ bool Engine::init()
 	return true;
 }
 
-bool Engine::bufferModel()
+bool Engine::bufferModels()
 {
-	std::vector<glm::vec3> locs =
-	{ { 1, 1, 0 },
-	{ -1, 1, 0 },
-	{ -1, -1, 0 },
-	{ 1, -1, 0 } };
-
-	std::vector <unsigned int>
-		locInds =
-	{ 0, 1, 2,
-		0, 2, 3 };
-
-	std::vector<glm::vec2> uvs =
-	{ { 1, 1 },
-	{ 0, 1 },
-	{ 0, 0 },
-	{ 1, 0 } };
-
-	std::vector <unsigned int>
-		uvInds =
-	{ 0, 1, 2,
-		0, 2, 3 };
-
-	vertCount = locInds.size();
-
-	std::vector<Vertex> vertBufData(vertCount);
-	for (unsigned int i = 0; i < vertCount; i++)
-	{
-		vertBufData[i].loc = locs[locInds[i]];
-		vertBufData[i].uv = uvs[uvInds[i]];
-	}
-
-	GLuint vertBuf;
-
-	glGenVertexArrays(1, &vertArr);
-	glGenBuffers(1, &vertBuf);
-
-	glBindVertexArray(vertArr);
-	glBindBuffer(GL_ARRAY_BUFFER, vertBuf);
-
-	glBufferData(GL_ARRAY_BUFFER,
-		sizeof(Vertex) * vertCount,
-		&vertBufData[0],
-		GL_STATIC_DRAW);
-
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(
-		0,
-		3,
-		GL_FLOAT,
-		GL_FALSE,
-		sizeof(Vertex),
-		0);
-
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribPointer(
-		1,
-		2,
-		GL_FLOAT,
-		GL_FALSE,
-		sizeof(Vertex),
-		(void*)sizeof(glm::vec3));
-
-	glBindVertexArray(0);
-
-	glClearColor(0.392f, 0.584f, 0.929f, 1.0f);
-
-	return true;
+	return model.buffer();
 }
 
 bool Engine::gameLoop()
@@ -226,11 +158,10 @@ bool Engine::gameLoop()
 			// Calculate changes in force and velocity
 			(*objects[i]).updateRigidBody(deltaTime);
 
-			glBindVertexArray(vertArr);
 			glUniformMatrix4fv(2, 1, GL_FALSE, &(*objects[i]).transform.objWorldTransform[0][0]);
 			if ((*objects[i]).visible)
 			{
-				glDrawArrays(GL_TRIANGLES, 0, vertCount);
+				model.render();
 			}
 		}
 

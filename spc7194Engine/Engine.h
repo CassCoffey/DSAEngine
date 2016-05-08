@@ -2,6 +2,7 @@
 #include "ShaderManager.h"
 #include "GameObject.h"
 #include "Camera.h"
+#include "Model.h"
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -21,16 +22,15 @@ public:
 	~Engine();
 
 	bool init();
-	bool bufferModel();
+	bool bufferModels();
 	bool gameLoop();
 	bool useShaders();
 	bool loadTexture(char* texture, GLuint* glTex);
 
 private:
+	Model model;
 	Camera* mainCamera;
 	GLFWwindow* GLFWwindowPtr;
-	GLuint vertArr;
-	unsigned int vertCount;
 	ShaderManager shaderManager;
 	std::vector<GameObject*> objects;
 	std::vector<GameObject*> bullets;
