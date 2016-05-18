@@ -32,7 +32,8 @@ public:
 	bool loadTexture(char* texture, GLuint* glTex);
 
 private:
-	Model model;
+	Model quad;
+	Model sphere;
 	Camera* mainCamera;
 	GLFWwindow* GLFWwindowPtr;
 	ShaderManager shaderManager;

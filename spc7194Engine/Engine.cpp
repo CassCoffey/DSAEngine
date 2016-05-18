@@ -19,11 +19,11 @@ void keyCallback(GLFWwindow * window, int key,
 Engine::Engine()
 {
 	// Instantiate Background
-	GameObject* background = new GameObject(vec3(0, 0, -0.1f), vec3(0, 0, 0), vec3(2.5f, 2.5f, 2.5f), "textures/background.jpg", 1, GameObject::ColliderType::none, "models/quad.obj");
+	GameObject* background = new GameObject(vec3(0, 0, -0.1f), vec3(0, 0, 0), vec3(2.5f, 2.5f, 2.5f), "textures/background.jpg", 1, GameObject::ColliderType::none, &quad);
 	objects.push_back(background);
 
 	// Instantiate Player ship
-	GameObject* ship = new GameObject(vec3(0, -1.25f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/ship.png", 1, GameObject::ColliderType::sphere, "models/quad.obj");
+	GameObject* ship = new GameObject(vec3(0, -1.25f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/ship.png", 1, GameObject::ColliderType::sphere, &quad);
 	objects.push_back(ship);
 
 	player = ship;
@@ -73,7 +73,12 @@ bool Engine::init()
 
 bool Engine::bufferModels()
 {
-	return model.buffer("models/quad.obj");
+	if (quad.buffer("models/quad.obj") && sphere.buffer("models/sphere.obj"))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 bool Engine::gameLoop()
@@ -122,7 +127,7 @@ bool Engine::gameLoop()
 		if (keyIsDown[GLFW_KEY_SPACE] && currTime - lastBullet > bulletInterval)
 		{
 			lastBullet = currTime;
-			GameObject* bullet = new GameObject((*player).transform.location, vec3(0, 0, 0), vec3(0.1f, 0.1f, 0.1f), "textures/bullet.png", 1, GameObject::ColliderType::sphere, "models/quad.obj");
+			GameObject* bullet = new GameObject((*player).transform.location, vec3(0, 0, 0), vec3(0.1f, 0.1f, 0.1f), "textures/bullet.png", 1, GameObject::ColliderType::sphere, &quad);
 			(*bullet).rigidBody.velocity.y = 3;
 			loadTexture((*bullet).texture, &(*bullet).glTex);
 			objects.push_back(bullet);
@@ -163,7 +168,7 @@ bool Engine::gameLoop()
 			glUniformMatrix4fv(3, 1, GL_FALSE, &(*objects[i]).transform.objWorldTransform[0][0]);
 			if (objects[i]->visible)
 			{
-				objects[i]->model.render();
+				objects[i]->model->render();
 			}
 		}
 
@@ -263,7 +268,7 @@ void Engine::spawnEnemies()
 	{
 		lastEnemy = currTime;
 		float x = (static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 3.5f))) - 1.75f;
-		GameObject* enemy = new GameObject(vec3(x, 2, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere, "models/sphere.obj");
+		GameObject* enemy = new GameObject(vec3(x, 2, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere, &quad);
 		loadTexture(enemy->texture, &enemy->glTex);
 		enemy->rigidBody.velocity = vec3(0, -1.0f, 0);
 		objects.push_back(enemy);

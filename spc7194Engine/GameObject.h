@@ -38,13 +38,13 @@ public:
 
 	GameObject();
 	~GameObject();
-	GameObject(vec3 location, vec3 rotation, vec3 size, char* iTexture, float mass, ColliderType iCollider, std::string modelName);
+	GameObject(vec3 location, vec3 rotation, vec3 size, char* iTexture, float mass, ColliderType iCollider, Model* iModel);
 
 	void updateRigidBody(float deltaTime);
 	bool collidesWith(const GameObject* other);
 	std::vector<GameObject> shatter();
 
-	Model model;
+	Model* model;
 	Transform transform;
 	char* texture;
 	GLuint glTex;
