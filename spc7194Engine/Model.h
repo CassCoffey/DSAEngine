@@ -1,5 +1,4 @@
 #pragma once
-#include "GameObject.h"
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -14,6 +13,9 @@
 #include <streambuf>
 #include <sstream>
 #include <iostream>
+
+using glm::vec3;
+using glm::vec2;
 
 struct Vertex
 {

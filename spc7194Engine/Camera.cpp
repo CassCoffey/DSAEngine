@@ -3,7 +3,7 @@
 
 Camera::Camera()
 {
-	transform.location = vec3(0, 0, 1);
+	transform.location = vec3(0, 0, 2.25f);
 	transform.rotation = vec3(0, 0, 0);
 	transform.size = vec3(1, 1, 1);
 	fov = 3.14159f * .4f;
@@ -20,7 +20,7 @@ Camera::~Camera()
 void Camera::updateMatrix(float deltaTime, GLFWwindow* GLFWwindowPtr)
 {
 	// Debug fps controls. Disabled by default.
-	if (true)
+	if (false)
 	{
 		// turn with mouse
 		float sens = .005;
@@ -53,5 +53,5 @@ void Camera::updateMatrix(float deltaTime, GLFWwindow* GLFWwindowPtr)
 
 	camMatrix = perspectiveMat * lookAtMat;
 
-	glUniformMatrix4fv(3, 1, GL_FALSE, &camMatrix[0][0]);
+	glUniformMatrix4fv(4, 1, GL_FALSE, &camMatrix[0][0]);
 }

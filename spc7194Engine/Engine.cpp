@@ -19,22 +19,14 @@ void keyCallback(GLFWwindow * window, int key,
 Engine::Engine()
 {
 	// Instantiate Background
-	GameObject* background = new GameObject(vec3(0, 0, 0), vec3(0, 0, 0), vec3(1, 1, 1), "textures/background.jpg", 1, GameObject::ColliderType::none);
+	GameObject* background = new GameObject(vec3(0, 0, -0.1f), vec3(0, 0, 0), vec3(2.5f, 2.5f, 2.5f), "textures/background.jpg", 1, GameObject::ColliderType::none, "models/quad.obj");
 	objects.push_back(background);
 
 	// Instantiate Player ship
-	GameObject* ship = new GameObject(vec3(0, -0.5f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/ship.png", 1, GameObject::ColliderType::sphere);
+	GameObject* ship = new GameObject(vec3(0, -1.25f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/ship.png", 1, GameObject::ColliderType::sphere, "models/quad.obj");
 	objects.push_back(ship);
 
 	player = ship;
-
-	// Instantiate enemies
-	GameObject* enemy1 = new GameObject(vec3(0.3f, 0.2f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere);
-	objects.push_back(enemy1);
-	enemies.push_back(enemy1);
-	GameObject* enemy2 = new GameObject(vec3(-0.3f, 0.2f, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere);
-	objects.push_back(enemy2);
-	enemies.push_back(enemy2);
 }
 
 Engine::~Engine()
@@ -69,6 +61,8 @@ bool Engine::init()
 
 	// Enable Alpha
 	glEnable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Create Camera
@@ -79,7 +73,7 @@ bool Engine::init()
 
 bool Engine::bufferModels()
 {
-	return model.buffer("models/sphere.obj");
+	return model.buffer("models/quad.obj");
 }
 
 bool Engine::gameLoop()
@@ -106,22 +100,30 @@ bool Engine::gameLoop()
 		keyWasDown = keyIsDown;
 		glfwPollEvents();
 
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// Update Light Position information
+		GLint lightPosLoc = glGetUniformLocation(shaderManager.getProgram(), "lightPos");
+		glUniform3f(lightPosLoc, lightLocation.x, lightLocation.y, lightLocation.z);
+
+		// Update Camera Position information
+		GLint viewPosLoc = glGetUniformLocation(shaderManager.getProgram(), "viewPos");
+		glUniform3f(viewPosLoc, mainCamera->transform.location.x, mainCamera->transform.location.y, mainCamera->transform.location.z);
 
 		// Movement
 		if (keyIsDown[GLFW_KEY_A])
 		{
-			(*player).rigidBody.force += glm::vec3(-0.01, 0, 0);
+			(*player).rigidBody.force += glm::vec3(-playerAccel, 0, 0);
 		}
 		if (keyIsDown[GLFW_KEY_D])
 		{
-			(*player).rigidBody.force += glm::vec3(0.01, 0, 0);
+			(*player).rigidBody.force += glm::vec3(playerAccel, 0, 0);
 		}
 		if (keyIsDown[GLFW_KEY_SPACE] && currTime - lastBullet > bulletInterval)
 		{
 			lastBullet = currTime;
-			GameObject* bullet = new GameObject((*player).transform.location, vec3(0, 0, 0), vec3(0.1f, 0.1f, 0.1f), "textures/bullet.png", 1, GameObject::ColliderType::sphere);
-			(*bullet).rigidBody.velocity.y = 1;
+			GameObject* bullet = new GameObject((*player).transform.location, vec3(0, 0, 0), vec3(0.1f, 0.1f, 0.1f), "textures/bullet.png", 1, GameObject::ColliderType::sphere, "models/quad.obj");
+			(*bullet).rigidBody.velocity.y = 3;
 			loadTexture((*bullet).texture, &(*bullet).glTex);
 			objects.push_back(bullet);
 			bullets.push_back(bullet);
@@ -156,25 +158,22 @@ bool Engine::gameLoop()
 		{
 			glBindTexture(GL_TEXTURE_2D, (*objects[i]).glTex);
 			// Calculate changes in force and velocity
-			(*objects[i]).updateRigidBody(deltaTime);
+			objects[i]->updateRigidBody(deltaTime);
 
-			glUniformMatrix4fv(2, 1, GL_FALSE, &(*objects[i]).transform.objWorldTransform[0][0]);
-			if ((*objects[i]).visible)
+			glUniformMatrix4fv(3, 1, GL_FALSE, &(*objects[i]).transform.objWorldTransform[0][0]);
+			if (objects[i]->visible)
 			{
-				model.render();
+				objects[i]->model.render();
 			}
 		}
 
-		for (int i = 0; i < bullets.size(); i++)
-		{
-			for (int j = 0; j < enemies.size(); j++)
-			{
-				if ((*bullets[i]).collidesWith(enemies[j]))
-				{
-					(*bullets[i]).visible = false;
-				}
-			}
-		}
+		checkCollisions();
+		
+		removeObjects();
+
+		spawnEnemies();
+
+		managePlayerSpeed();
 
 		mainCamera->updateMatrix(deltaTime, GLFWwindowPtr);
 
@@ -208,6 +207,110 @@ bool Engine::useShaders()
 	}
 
 	return false;
+}
+
+void Engine::checkCollisions()
+{
+	// Collision Checking
+	for (int i = 0; i < bullets.size(); i++)
+	{
+		for (int j = 0; j < enemies.size(); j++)
+		{
+			if (bullets[i]->collidesWith(enemies[j]))
+			{
+				bullets[i]->remove = true;
+				enemies[j]->remove = true;
+			}
+		}
+		if (bullets[i]->transform.location.y >= 2)
+		{
+			bullets[i]->remove = true;
+		}
+	}
+}
+
+void Engine::removeObjects()
+{
+	// Object removal
+	for (int i = 0; i < bullets.size(); i++)
+	{
+		if (bullets[i]->remove)
+		{
+			bullets.erase(bullets.begin() + i);
+		}
+	}
+	for (int i = 0; i < enemies.size(); i++)
+	{
+		if (enemies[i]->remove)
+		{
+			enemies.erase(enemies.begin() + i);
+		}
+	}
+	for (int i = 0; i < objects.size(); i++)
+	{
+		if (objects[i]->remove)
+		{
+			GameObject* temp = objects[i];
+			objects.erase(objects.begin() + i);
+			delete temp;
+		}
+	}
+}
+
+void Engine::spawnEnemies()
+{
+	if (currTime - lastEnemy > enemyInterval)
+	{
+		lastEnemy = currTime;
+		float x = (static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / 3.5f))) - 1.75f;
+		GameObject* enemy = new GameObject(vec3(x, 2, 0), vec3(0, 0, 0), vec3(0.25f, 0.25f, 0.25f), "textures/enemy.png", 1, GameObject::ColliderType::sphere, "models/sphere.obj");
+		loadTexture(enemy->texture, &enemy->glTex);
+		enemy->rigidBody.velocity = vec3(0, -1.0f, 0);
+		objects.push_back(enemy);
+		enemies.push_back(enemy);
+	}
+}
+
+void Engine::managePlayerSpeed()
+{
+	// manage boundaries
+	if (player->transform.location.x > 2.0f)
+	{
+		player->transform.location.x = 2.0f;
+		player->rigidBody.velocity.x = 0;
+	}
+	if (player->transform.location.x < -2.0f)
+	{
+		player->transform.location.x = -2.0f;
+		player->rigidBody.velocity.x = 0;
+	}
+
+	// manage deceleration
+	if (player->rigidBody.velocity.x > 0 + playerDecel)
+	{
+		player->rigidBody.velocity.x -= playerDecel;
+	}
+	if (player->rigidBody.velocity.x < 0 - playerDecel)
+	{
+		player->rigidBody.velocity.x += playerDecel;
+	}
+	if (player->rigidBody.velocity.x > 0 - playerDecel && player->rigidBody.velocity.x < 0 + playerDecel)
+	{
+		player->rigidBody.velocity.x = 0;
+	}
+
+	// manage max speed
+	if (player->rigidBody.velocity.x > playerMaxVel)
+	{
+		player->rigidBody.velocity.x = playerMaxVel;
+	}
+	if (player->rigidBody.velocity.x < -playerMaxVel)
+	{
+		player->rigidBody.velocity.x = -playerMaxVel;
+	}
+
+	// manage player turning effect
+	player->transform.rotation.x = player->rigidBody.velocity.x / 12.0f;
 }
 
 bool Engine::loadTexture(char * texture, GLuint* glTex)

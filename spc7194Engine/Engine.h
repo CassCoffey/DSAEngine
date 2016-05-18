@@ -25,6 +25,10 @@ public:
 	bool bufferModels();
 	bool gameLoop();
 	bool useShaders();
+	void checkCollisions();
+	void removeObjects();
+	void spawnEnemies();
+	void managePlayerSpeed();
 	bool loadTexture(char* texture, GLuint* glTex);
 
 private:
@@ -41,5 +45,11 @@ private:
 	double deltaTime;		
 	double lastBullet = 0;
 	const double bulletInterval = 0.3;
+	double lastEnemy = 0;
+	const double enemyInterval = 1;
+	float playerMaxVel = 3.0f;
+	float playerAccel = 0.05f;
+	float playerDecel = 0.02f;
+	vec3 lightLocation = vec3(5, 5, 5);
 };
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "Model.h"
 #include <gl/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -37,16 +38,19 @@ public:
 
 	GameObject();
 	~GameObject();
-	GameObject(vec3 location, vec3 rotation, vec3 size, char* iTexture, float mass, ColliderType iCollider);
+	GameObject(vec3 location, vec3 rotation, vec3 size, char* iTexture, float mass, ColliderType iCollider, std::string modelName);
 
 	void updateRigidBody(float deltaTime);
 	bool collidesWith(const GameObject* other);
+	std::vector<GameObject> shatter();
 
+	Model model;
 	Transform transform;
 	char* texture;
 	GLuint glTex;
 	RigidBody rigidBody;
 	ColliderType collider;
 	bool visible;
+	bool remove = false;
 };
 

@@ -10,7 +10,7 @@ GameObject::~GameObject()
 
 }
 
-GameObject::GameObject(vec3 location, vec3 rotation, vec3 size, char * iTexture, float mass, ColliderType iCollider)
+GameObject::GameObject(vec3 location, vec3 rotation, vec3 size, char * iTexture, float mass, ColliderType iCollider, std::string modelName)
 {
 	transform.location = location;
 	transform.rotation = rotation;
@@ -19,6 +19,7 @@ GameObject::GameObject(vec3 location, vec3 rotation, vec3 size, char * iTexture,
 	rigidBody.mass = mass;
 	collider = iCollider;
 	visible = true;
+	model.buffer("modelName");
 }
 
 void GameObject::updateRigidBody(float deltaTime)
@@ -134,4 +135,13 @@ bool GameObject::collidesWith(const GameObject * other)
 	}
 
 	return true;
+}
+
+std::vector<GameObject> GameObject::shatter()
+{
+	std::vector<GameObject> tempVec = std::vector<GameObject>();
+
+	//for (int i = 0; i <)
+
+	return tempVec;
 }
